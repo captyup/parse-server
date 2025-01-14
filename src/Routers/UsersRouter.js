@@ -119,7 +119,11 @@ export class UsersRouter extends ClassesRouter {
             user = results[0];
           }
 
-          return passwordCrypto.compare(password, user.password);
+          if(user.password.startsWith("$1$")){
+            return passwordCrypto.compare(password + user.username.split('-')[1], user.password);
+          } else {
+            return passwordCrypto.compare(password, user.password);
+          }
         })
         .then(correct => {
           isValidPassword = correct;

@@ -6,13 +6,33 @@ import rest from '../rest';
 import Parse from 'parse/node';
 import AccountLockout from '../AccountLockout';
 import Config from '../Config';
-
+import moment from 'moment';
 var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
 
 export class UserController extends AdaptableController {
   constructor(adapter, appId, options = {}) {
     super(adapter, appId, options);
+    moment.updateLocale('en', {
+      relativeTime : {
+        future: "in %s",
+        past:   "%s ago",
+        s  : '幾秒',
+        ss : '%d秒',
+        m:  "1分",
+        mm: "%d分",
+        h:  "1小時",
+        hh: "%d小時",
+        d:  "24小時",
+        dd: "%d天",
+        w:  "1周",
+        ww: "%d周",
+        M:  "1個月",
+        MM: "%d 月",
+        y:  "1年",
+        yy: "%d 年"
+      }
+    });
   }
 
   get config() {
@@ -293,6 +313,7 @@ export class UserController extends AdaptableController {
       appName: this.config.appName,
       link: link,
       user: inflate('_User', user),
+      perishable_token_expires_at: user._perishable_token_expires_at
     };
 
     if (this.adapter.sendPasswordResetEmail) {
@@ -323,32 +344,33 @@ export class UserController extends AdaptableController {
 
   defaultVerificationEmail({ link, user, appName }) {
     const text =
-      'Hi,\n\n' +
-      'You are being asked to confirm the e-mail address ' +
-      user.get('email') +
-      ' with ' +
-      appName +
-      '\n\n' +
-      '' +
-      'Click here to confirm it:\n' +
-      link;
+    '您好,\n\n' +
+    '您被要求與 ' + appName + ' 確認電子郵件地址 ' +
+    user.get('email') +
+    '\n\n' +
+    '' +
+    '點擊此處確認:\n' +
+    link;
     const to = user.get('email');
-    const subject = 'Please verify your e-mail for ' + appName;
+    const subject = '請為 ' + appName + ' 驗證您的電子信箱' ;
     return { text, to, subject };
   }
 
-  defaultResetPasswordEmail({ link, user, appName }) {
+  defaultResetPasswordEmail({ link, user, appName, perishable_token_expires_at }) {
+    let expiresDate = perishable_token_expires_at;
+    if (expiresDate && expiresDate.__type == 'Date') {
+      expiresDate = new Date(expiresDate.iso);
+    }
     const text =
-      'Hi,\n\n' +
-      'You requested to reset your password for ' +
-      appName +
-      (user.get('username') ? " (your username is '" + user.get('username') + "')" : '') +
-      '.\n\n' +
-      '' +
-      'Click here to reset it:\n' +
-      link;
-    const to = user.get('email') || user.get('username');
-    const subject = 'Password Reset for ' + appName;
+    expiresDate ?
+      (user.get('username') ? " (您的帳號:'" + user.get('username') + "')\n" : '') +
+      '請於收到信件' + moment(expiresDate).fromNow(true) +
+      '內前點選此連結重設密碼：\n' + link
+      :
+      (user.get('username') ? " (您的帳號:'" + user.get('username') + "')\n" : '') +
+      '請點選此連結重設密碼：\n' + link
+    const to = user.get('email') || user.get('connectionEmail') || user.get('username');
+    const subject = appName + '-密碼重設信';
     return { text, to, subject };
   }
 }

@@ -405,8 +405,8 @@ export class DefinedSchemas {
     switch (className) {
       case '_User':
         indexes.push(
-          'case_insensitive_username',
-          'case_insensitive_email',
+          // 'case_insensitive_username',
+          // 'case_insensitive_email',
           'username_1',
           'email_1'
         );

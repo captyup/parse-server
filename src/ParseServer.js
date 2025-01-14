@@ -46,7 +46,7 @@ import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
 import OptionsDefinitions from './Options/Definitions';
-
+import sgMail from '@sendgrid/mail';
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
@@ -441,8 +441,25 @@ class ParseServer {
    * @returns {ParseServer} the parse server instance
    */
   static async startApp(options: ParseServerOptions) {
-    const parseServer = new ParseServer(options);
-    return parseServer.startApp(options);
+    if(process.env.SENDGRID_API_KEY) {
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    }
+    const newOptions = {
+      ...options,
+    }
+    if(options.emailAdapter && options.emailAdapter.module === 'parse-server-api-mail-adapter') {
+      newOptions.emailAdapter = {
+        module: options.emailAdapter.module,
+        options: {
+          ...options.emailAdapter.options,
+          apiCallback: async ({ payload, locale }) => {
+            await sgMail.send(payload);
+          }
+        },
+      }
+    }
+    const parseServer = new ParseServer(newOptions);
+    return parseServer.startApp(newOptions);
   }
 
   /**

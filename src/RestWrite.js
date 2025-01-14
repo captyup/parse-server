@@ -362,7 +362,7 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
               this.storage.fieldsChangedByTrigger.push(fieldName);
             }
           } else if (schema.fields[fieldName] && schema.fields[fieldName].required === true) {
-            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, `${fieldName} is required`);
+            throw new Parse.Error(Parse.Error.VALIDATION_ERROR, `${schema.className}:${fieldName} is required`);
           }
         }
       };
