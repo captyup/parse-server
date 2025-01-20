@@ -16,6 +16,18 @@ COPY package*.json ./
 # Copy src to have config files for install
 COPY . .
 
+RUN npm i @aws-sdk/client-cloudfront \
+@aws-sdk/client-s3 \
+@aws-sdk/s3-request-presigner \
+@parse/s3-files-adapter \
+@sendgrid/mail axios \
+entropy-string \
+firebase-admin \
+moment-timezone \
+neo4j-driver
+
+RUN npm i parse-server-aws-ses-mail-adapter
+
 # Install without scripts
 RUN npm ci --omit=dev --ignore-scripts \
     # Copy production node_modules aside for later
